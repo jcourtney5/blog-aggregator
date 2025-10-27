@@ -1,11 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
 	"github.com/jcourtney5/blog-aggregator/internal/config"
+	"github.com/jcourtney5/blog-aggregator/internal/database"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -16,9 +19,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Connect to our SQL db
+	db, err := sql.Open("postgres", cfg.DbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dbQueries := database.New(db)
+
 	// Init state struct
 	st := &state{
 		cfg: &cfg,
+		db:  dbQueries,
 	}
 
 	// Init commands struct
@@ -28,6 +39,7 @@ func main() {
 
 	// Register our commands
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	// Get the command line args (skip first one which is program name)
 	args := os.Args[1:]

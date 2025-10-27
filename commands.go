@@ -1,13 +1,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jcourtney5/blog-aggregator/internal/config"
+	"github.com/jcourtney5/blog-aggregator/internal/database"
+	"github.com/lib/pq"
 )
 
 type state struct {
 	cfg *config.Config
+	db  *database.Queries
 }
 
 type command struct {
@@ -41,13 +48,59 @@ func handlerLogin(s *state, cmd command) error {
 	// Get username from first arg
 	username := cmd.args[0]
 
+	// Check if the user exists in the db first
+	_, err := s.db.GetUser(context.Background(), username)
+	if err != nil {
+		fmt.Printf("User %s not found\n", username)
+		os.Exit(1)
+	}
+
 	// Set user which should update and save config file
-	err := s.cfg.SetUser(username)
+	err = s.cfg.SetUser(username)
 	if err != nil {
 		return fmt.Errorf("Failed to set user: %w\n", err)
 	}
 
 	fmt.Printf("Username '%s' has been set\n", username)
 
+	return nil
+}
+
+func handlerRegister(s *state, cmd command) error {
+	// Make sure there is enough args
+	if len(cmd.args) == 0 {
+		return fmt.Errorf("register missing the <username> arguement")
+	}
+
+	// Get username from first arg
+	username := cmd.args[0]
+
+	// Create the user in the db
+	params := database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      username,
+	}
+	user, err := s.db.CreateUser(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Failed to create the user in the db: %w\n", err)
+	}
+
+	// Set user which should update and save config file
+	err = s.cfg.SetUser(username)
+	if err != nil {
+		// check for and exit on unique constraint violation
+		if pgerr, ok := err.(*pq.Error); ok {
+			if pgerr.Code == "23505" {
+				fmt.Printf("Username '%s' already exists\n", username)
+				os.Exit(1)
+			}
+		} else {
+			return fmt.Errorf("Failed to set user: %w\n", err)
+		}
+	}
+
+	fmt.Printf("User has been created %v\n", user)
 	return nil
 }
