@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,8 +50,7 @@ func handlerLogin(s *state, cmd command) error {
 	// Check if the user exists in the db first
 	_, err := s.db.GetUser(context.Background(), username)
 	if err != nil {
-		fmt.Printf("User %s not found\n", username)
-		os.Exit(1)
+		return fmt.Errorf("User %s not found\n", username)
 	}
 
 	// Set user which should update and save config file
@@ -93,8 +91,7 @@ func handlerRegister(s *state, cmd command) error {
 		// check for and exit on unique constraint violation
 		if pgerr, ok := err.(*pq.Error); ok {
 			if pgerr.Code == "23505" {
-				fmt.Printf("Username '%s' already exists\n", username)
-				os.Exit(1)
+				return fmt.Errorf("Username '%s' already exists: %w\n", username, err)
 			}
 		} else {
 			return fmt.Errorf("Failed to set user: %w\n", err)
@@ -102,5 +99,15 @@ func handlerRegister(s *state, cmd command) error {
 	}
 
 	fmt.Printf("User has been created %v\n", user)
+	return nil
+}
+
+func handlerReset(s *state, cmd command) error {
+	err := s.db.ClearUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to clear the users table: %w\n", err)
+	}
+
+	fmt.Printf("Cleared the users table\n")
 	return nil
 }
