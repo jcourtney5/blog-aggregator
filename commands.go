@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -109,5 +110,51 @@ func handlerReset(s *state, cmd command) error {
 	}
 
 	fmt.Printf("Cleared the users table\n")
+	return nil
+}
+
+func handlerUsers(s *state, cmd command) error {
+	// Read the config file to get the current user
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		return fmt.Errorf("Failed to read config file to get current user: %w\n", err)
+	}
+	current_user := cfg.CurrentUserName
+
+	users, err := s.db.GetUsers(context.Background())
+	if err != nil {
+		return fmt.Errorf("Failed to get all the users from the users table: %w\n", err)
+	}
+
+	fmt.Printf("All the current users:\n")
+	for _, user := range users {
+		if user.Name == current_user {
+			fmt.Printf("* %s (current)\n", user.Name)
+		} else {
+			fmt.Printf("* %s\n", user.Name)
+		}
+	}
+
+	return nil
+}
+
+func handlerAgg(s *state, cmd command) error {
+	// Hard coded url for now
+	url := "https://www.wagslane.dev/index.xml"
+
+	rssFeed, err := fetchFeed(context.Background(), url)
+	if err != nil {
+		return err
+	}
+
+	//fmt.Println(rssFeed)
+
+	// print formatted JSON
+	formattedJSON, err := json.MarshalIndent(rssFeed, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(formattedJSON))
+
 	return nil
 }
