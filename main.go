@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -11,19 +10,25 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type state struct {
+	cfg *config.Config
+	db  *database.Queries
+}
+
 func main() {
 
 	// Read the current config file
 	cfg, err := config.ReadConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error reading config: %v\n", err)
 	}
 
 	// Connect to our SQL db
 	db, err := sql.Open("postgres", cfg.DbURL)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error connecting to the db: %v\n", err)
 	}
+	defer db.Close()
 	dbQueries := database.New(db)
 
 	// Init state struct
@@ -49,8 +54,7 @@ func main() {
 
 	// Make sure we at least have the command
 	if len(args) == 0 {
-		fmt.Printf("Not enough arguments passed, need at least one for the command\n")
-		os.Exit(1)
+		log.Fatalf("Not enough arguments passed, need at least one for the command\n")
 	}
 
 	// Create command struct
@@ -62,7 +66,6 @@ func main() {
 	// Run the command
 	err = cmds.run(st, command)
 	if err != nil {
-		fmt.Printf("Command failed: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Command failed: %v\n", err)
 	}
 }

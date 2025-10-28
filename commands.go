@@ -12,11 +12,6 @@ import (
 	"github.com/lib/pq"
 )
 
-type state struct {
-	cfg *config.Config
-	db  *database.Queries
-}
-
 type command struct {
 	name string
 	args []string
