@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/xml"
-	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -27,12 +26,10 @@ type RSSItem struct {
 }
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
-	rssFeed := &RSSFeed{}
-
 	// Create the request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, feedURL, nil)
 	if err != nil {
-		return rssFeed, fmt.Errorf("Error creating request: %w\n", err)
+		return nil, err
 	}
 	req.Header.Set("User-Agent", "gator")
 
@@ -44,33 +41,36 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	// Perform the request
 	resp, err := client.Do(req)
 	if err != nil {
-		return rssFeed, fmt.Errorf("Error making request: %w\n", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		return rssFeed, fmt.Errorf("Unexpected status code: %v\n", resp.Status)
+		return nil, err
 	}
 
 	// Read the data from the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return rssFeed, fmt.Errorf("Error reading response body: %w\n", err)
+		return nil, err
 	}
 
 	// Decode the xml into an RSSFeed
-	if err := xml.Unmarshal(body, &rssFeed); err != nil {
-		return rssFeed, fmt.Errorf("Error decoding XML: %w\n", err)
+	var rssFeed RSSFeed
+	err = xml.Unmarshal(body, &rssFeed)
+	if err != nil {
+		return nil, err
 	}
 
 	// html Unescape all Title and Description fields
 	rssFeed.Channel.Title = html.UnescapeString(rssFeed.Channel.Title)
 	rssFeed.Channel.Description = html.UnescapeString(rssFeed.Channel.Description)
 	for i := range rssFeed.Channel.Item {
-		rssFeed.Channel.Item[i].Title = html.UnescapeString(rssFeed.Channel.Item[i].Title)
-		rssFeed.Channel.Item[i].Description = html.UnescapeString(rssFeed.Channel.Item[i].Description)
+		item := &rssFeed.Channel.Item[i]
+		item.Title = html.UnescapeString(item.Title)
+		item.Description = html.UnescapeString(item.Description)
 	}
 
-	return rssFeed, nil
+	return &rssFeed, nil
 }
