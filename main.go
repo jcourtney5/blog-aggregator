@@ -48,6 +48,7 @@ func main() {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerUsers)
 	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
 
 	// Get the command line args (skip first one which is program name)
 	args := os.Args[1:]
@@ -66,6 +67,6 @@ func main() {
 	// Run the command
 	err = cmds.run(st, command)
 	if err != nil {
-		log.Fatalf("Command failed: %v\n", err)
+		log.Fatal(err)
 	}
 }
