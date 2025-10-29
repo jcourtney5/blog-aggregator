@@ -70,7 +70,9 @@ func handlerRegister(s *state, cmd command) error {
 		}
 	}
 
-	fmt.Printf("User has been created %+v\n", user)
+	fmt.Println("User has been created:")
+	printUser(user)
+	fmt.Println("=========================================")
 	return nil
 }
 
@@ -91,4 +93,9 @@ func handlerUsers(s *state, cmd command) error {
 	}
 
 	return nil
+}
+
+func printUser(user database.User) {
+	fmt.Printf(" * ID:      %v\n", user.ID)
+	fmt.Printf(" * Name:    %v\n", user.Name)
 }
