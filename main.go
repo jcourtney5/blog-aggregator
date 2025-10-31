@@ -52,6 +52,7 @@ func main() {
 	cmds.register("feeds", handlerFeeds)
 	cmds.register("follow", middlewareLoggedIn(handlerFollow))
 	cmds.register("following", middlewareLoggedIn(handlerListFeedFollows))
+	cmds.register("unfollow", middlewareLoggedIn(handlerRemoveFollow))
 
 	// Get the command line args (skip first one which is program name)
 	args := os.Args[1:]

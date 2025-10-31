@@ -24,7 +24,7 @@ func handlerFollow(s *state, cmd command, user database.User) error {
 		return fmt.Errorf("Feed with url %s not found\n", url)
 	}
 
-	// Create the feed in the db
+	// Create the feed follow in the db
 	params := database.CreateFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
@@ -60,6 +60,35 @@ func handlerListFeedFollows(s *state, cmd command, user database.User) error {
 		fmt.Printf("* Feed URL:      %s\n", feedFollow.FeedName)
 	}
 
+	return nil
+}
+
+func handlerRemoveFollow(s *state, cmd command, user database.User) error {
+	// Make sure there is enough args
+	if len(cmd.args) < 1 {
+		return fmt.Errorf("usage: %v <url>", cmd.name)
+	}
+
+	// Get the args
+	url := cmd.args[0]
+
+	// Get the feed from the DB using the url
+	feed, err := s.db.GetFeedByUrl(context.Background(), url)
+	if err != nil {
+		return fmt.Errorf("Feed with url %s not found\n", url)
+	}
+
+	// Remove the feed follow in the db
+	params := database.RemoveFeedFollowParams{
+		FeedID: feed.ID,
+		UserID: user.ID,
+	}
+	err = s.db.RemoveFeedFollow(context.Background(), params)
+	if err != nil {
+		return fmt.Errorf("Failed to remove the feed_follow in the db: %w\n", err)
+	}
+
+	fmt.Printf("Successfully removed the feed follow\n")
 	return nil
 }
 
