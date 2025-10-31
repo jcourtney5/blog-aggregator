@@ -9,7 +9,7 @@ import (
 	"github.com/jcourtney5/blog-aggregator/internal/database"
 )
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	// Make sure there is enough args
 	if len(cmd.args) < 2 {
 		return fmt.Errorf("usage: %v <name> <url>", cmd.name)
@@ -18,12 +18,6 @@ func handlerAddFeed(s *state, cmd command) error {
 	// Get the args
 	name := cmd.args[0]
 	url := cmd.args[1]
-
-	// Get the current user from the DB
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("Current User %s not found\n", s.cfg.CurrentUserName)
-	}
 
 	// Create the feed in the db
 	params := database.CreateFeedParams{

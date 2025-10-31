@@ -9,7 +9,7 @@ import (
 	"github.com/jcourtney5/blog-aggregator/internal/database"
 )
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	// Make sure there is enough args
 	if len(cmd.args) < 1 {
 		return fmt.Errorf("usage: %v <url>", cmd.name)
@@ -17,12 +17,6 @@ func handlerFollow(s *state, cmd command) error {
 
 	// Get the args
 	url := cmd.args[0]
-
-	// Get the current user from the DB
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("Current User %s not found\n", s.cfg.CurrentUserName)
-	}
 
 	// Get the feed from the DB using the url
 	feed, err := s.db.GetFeedByUrl(context.Background(), url)
@@ -50,13 +44,7 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerListFeedFollows(s *state, cmd command) error {
-	// Get the current user from the DB
-	user, err := s.db.GetUser(context.Background(), s.cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("Current User %s not found\n", s.cfg.CurrentUserName)
-	}
-
+func handlerListFeedFollows(s *state, cmd command, user database.User) error {
 	feedFollows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return fmt.Errorf("Failed to get the list of feed follows: %w\n", err)
