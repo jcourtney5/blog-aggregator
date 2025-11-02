@@ -8,7 +8,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jcourtney5/blog-aggregator/internal/database"
+	"github.com/lib/pq"
 )
 
 // example feeds
@@ -57,11 +59,35 @@ func scrapeFeeds(s *state) {
 		return
 	}
 
-	//err = print_rss_feed(rssFeed)
-	//err = print_rss_feed_json_formatted(rssFeed)
-	err = print_rss_feed_titles(rssFeed)
-	if err != nil {
-		log.Printf("Failed to print RSS feed %s: %v\n", feed.Name, err)
+	// Save the posts
+	for _, item := range rssFeed.Channel.Item {
+		// parse the publishedAt time
+		publishedAt := sql.NullTime{}
+		parsedTime, err := time.Parse(time.RFC1123Z, item.PubDate)
+		if err == nil {
+			publishedAt = sql.NullTime{Time: parsedTime, Valid: true}
+		} else {
+			log.Printf("Failed to parse published at %s: %v\n", item.PubDate, err)
+		}
+
+		_, err = s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       item.Title,
+			Url:         item.Link,
+			Description: sql.NullString{String: item.Description, Valid: true},
+			PublishedAt: publishedAt,
+			FeedID:      feed.ID,
+		})
+		if err != nil {
+			// Only log an error if didn't fail unique constraint
+			if pgerr, ok := err.(*pq.Error); ok {
+				if pgerr.Code != "23505" {
+					log.Printf("Failed to save post: %v\n", err)
+				}
+			}
+		}
 	}
 
 	// mark feed as fetched
