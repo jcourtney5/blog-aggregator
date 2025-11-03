@@ -20,7 +20,7 @@ Command line RSS feed post tracker and aggregator project
       "db_url": "<postgres_connection_string>?sslmode=disable"
     }
     ```
-* Run the program with "blog-aggregator <command> <cmd_args>"
+* Run the program with "blog-aggregator \<command> \<args>"
 
 ---
 
